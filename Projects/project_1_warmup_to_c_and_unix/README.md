@@ -10,14 +10,14 @@ A program to read lines of data from given input and write it in reverse order t
 gcc -o reverse reverse.c
 
 ## Usage
-### ./reverse
+### `./reverse`
 Reads from stdin and writes to stdout
 tip: use ctrl+D to end input stream
 
-### ./reverse <input>
+### `./reverse <input>`
 Reads from given file and writes to stdout
 
-### ./reverse <input> <output>
+### `./reverse <input> <output>`
 Reads from given file and writes to given file
 
 
