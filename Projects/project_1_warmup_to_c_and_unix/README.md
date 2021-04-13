@@ -4,7 +4,10 @@ A program to read lines of data from given input and write it in reverse order t
 
 ## Features
 
-* File length is defined by the available memory, because of the implementation of doubly linked list
+* Line sizes are dynamically allocated to fit the size, to allow very long lines and memory efficiency
+* Lines are stored in doubly linked list, which allows for very long files to be processed
+* All errors are handled and sent to standard error
+* No memory leaks or warnings tested with valgrind
 
 ## Building
 gcc -o reverse reverse.c
@@ -21,7 +24,9 @@ Reads from given file and writes to stdout
 Reads from given file and writes to given file
 
 
-## Made with
+## Made and tested with
+Ubuntu 20.04.2 LTS 64-bit
+
 gcc version 9.3.0
 
-Ubuntu 20.04.2 LTS 64-bit
+valgrind-3.15.0
