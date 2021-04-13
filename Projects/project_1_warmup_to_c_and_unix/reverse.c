@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define MAX_LINE_LEN 512
-
 
 // Doubly Linked List
 struct Dllist {
@@ -13,28 +11,28 @@ struct Dllist {
 };
 
 // Function to add a node to the end of the list chain
-struct Dllist* pushNewNode(char* text, struct Dllist* tail) {
-
+struct Dllist* pushNewNode(char* text, ssize_t textLen, struct Dllist* tail) {
+    // Null checking
     if (tail == NULL || text == NULL) {
-        printf("Null elements in pushNewNode\n");
+        fprintf(stderr, "Null elements in pushNewNode\n");
         exit(1);
     }
 
     // Allocate for list node
-    struct Dllist* newNode = (struct Dllist*) malloc(sizeof(struct Dllist));
+    struct Dllist* newNode = (struct Dllist*) calloc(1, sizeof(struct Dllist));
     if (newNode == NULL) { // error check
         perror("pushNewNode node");
         exit(1);
     }
 
-    // Allocate for the new text
-    char* newText = (char*) malloc(sizeof(char) * MAX_LINE_LEN);
+    // Dynamically allocates memory given by the readline()
+    char* newText = (char*) calloc((textLen +1), sizeof(char));
     if (newText == NULL) { // error check
         perror("pushNewNode text");
         exit(1);
     }
     // Copy the given text to allocation
-    strcpy(newText, text);
+    strncpy(newText, text, textLen);
 
     newNode->text = newText; // new text to text
     newNode->prev = tail; // previous = old tail node
@@ -45,22 +43,22 @@ struct Dllist* pushNewNode(char* text, struct Dllist* tail) {
 }
 
 // Function for the initial node
-struct Dllist* initialNode(char* text) {
-    // Allocate for list node
-    struct Dllist* newNode = (struct Dllist*) malloc(sizeof(struct Dllist));
+struct Dllist* initialNode(char* text, ssize_t textLen) {
+    // Dynamically allocates memory given by the readline()
+    struct Dllist* newNode = (struct Dllist*) calloc(1, sizeof(struct Dllist));
     if (newNode == NULL) { // error check
         perror("pushNewNode node");
         exit(1);
     }
 
     // Allocate for the new text
-    char* newText = (char*) malloc(sizeof(char) * MAX_LINE_LEN);
+    char* newText = (char*) calloc((textLen +1), sizeof(char));
     if (newText == NULL) { // error check
         perror("pushNewNode data");
         exit(1);
     }
     // Copy the given text to allocation
-    strcpy(newText, text);
+    strncpy(newText, text, textLen);
 
     newNode->text = newText; // new text to text
     newNode->prev = NULL;
@@ -73,8 +71,10 @@ struct Dllist* initialNode(char* text) {
 int freeFromHead(struct Dllist* head) {
     struct Dllist* current = head;
     struct Dllist* previous = NULL;
+
     if (current == NULL) {
-        printf("Null pointer in freeFromHead()");
+        fprintf(stderr, "Null pointer in freeFromHead()");
+        exit(1);
     }
 
     // Going through the list
@@ -94,7 +94,7 @@ int freeFromHead(struct Dllist* head) {
 // Print starting from tail to head
 int printListReverseOrder(FILE* fp, struct Dllist** tail) {
     if (*tail == NULL) {
-        printf("Tail is null in printList\n");
+        fprintf(stderr, "Tail is null in printList\n");
         exit(1);
     }
     
@@ -112,22 +112,36 @@ int printListReverseOrder(FILE* fp, struct Dllist** tail) {
 // Read from given fp and store to doubly linked list
 int readFromSource(FILE* fp, struct Dllist** head, struct Dllist** tail) {
     // maximum length for a line
-    char line[MAX_LINE_LEN];
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
 
     int lineCnt = 0;
-    while (fgets(line, MAX_LINE_LEN, fp) != NULL) { // Reads from input
+    while ((read = getline(&line, &len, fp)) != -1) {
+        // Reads from input
+        // Read size is used for dynamical allocation
 
         // If head is null the list does not exist yet
         if (*head == NULL) {
-            *head = initialNode(line);
+            *head = initialNode(line, read);
             *tail = *head;
         } else {
             // List exists -> push new node to tail
-            *tail = pushNewNode(line, *tail);
+            *tail = pushNewNode(line, read, *tail);
         }
         lineCnt++;
     }
-    printf("Read %d lines\n", lineCnt);
+
+    // Free the line pointer
+    free(line);
+
+    // Test if any lines were read
+    if (lineCnt > 0)
+        printf("Read %d lines\n", lineCnt);
+    else {
+        fprintf(stderr, "Empty file\n");
+        exit(1);
+    }
     
     return 0;
 }
@@ -152,7 +166,7 @@ int main(int argc, char *argv[]) {
     char* out_filename  = "stdout";
 
     if (argc > 3) { // Too many arguments
-        printf("reverse <input> <output>");
+        fprintf(stderr, "usage: reverse <input> <output>\n");
         exit(1);
     }
 
@@ -169,7 +183,7 @@ int main(int argc, char *argv[]) {
 
             // IN file
             if ((f_in = fopen(in_filename, "r")) == NULL) {
-                perror("Could not read file");
+                fprintf(stderr, "error: cannot open file '%s'\n", in_filename);
                 exit(1);
             }
             break;
@@ -179,14 +193,20 @@ int main(int argc, char *argv[]) {
             in_filename = argv[1];
             out_filename = argv[2];
 
+            // Check for identical input and output
+            if (strncmp(in_filename, out_filename, strlen(in_filename)) == 0) {
+                fprintf(stderr, "Input and output file must differ\n");
+                exit(1);
+            }
+
             // IN file
             if ((f_in = fopen(in_filename, "r")) == NULL) {
-                perror("Could not read file");
+                fprintf(stderr, "error: cannot open file '%s'\n", in_filename);
                 exit(1);
             }
             // OUT file
             if ((f_out = fopen(out_filename, "w")) == NULL) {
-                perror("Could not write file");
+                fprintf(stderr, "error: cannot open file '%s'\n", out_filename);
                 exit(1);
             }
             break;
