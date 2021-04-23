@@ -26,6 +26,7 @@ int addToLinkedList(node_t * head, char c, int cnt) {
     current->next->character    = c;
     current->next->count        = cnt;
     current->next->next         = NULL;
+    return 0;
 }
 
 
@@ -57,6 +58,7 @@ int freeLinkedList(node_t * head) {
         free(temp1);
         free(temp2);
     }
+    return 0;
 }
 
 
@@ -72,85 +74,91 @@ int main(int argc, char * argv[]) {
     node_t * head = NULL;
 
 
-    if (argc == 2) { // One argument is given
+    if (argc >= 2) { // One or more arguments were given
 
-        filename    = argv[1];
+        for (size_t idx = 1; idx < argc; idx++) {
+        
+            filename    = argv[idx];
 
-        if ((file = fopen(filename, "r")) == NULL) {
-            fprintf(stderr, "error: cannot open file '%s'\n", filename);
-            exit(1);
-        }
+            if ((file = fopen(filename, "r")) == NULL) {
+                fprintf(stderr, "error: cannot open file '%s'\n", filename);
+                exit(1);
+            }
 
-        while ((read = getline(&line, &len, file)) != -1) {
+            while ((read = getline(&line, &len, file)) != -1) {
 
-            char prevChar   = 0;
-            char curChar    = 0;
-            int count       = 0;
+                char prevChar   = 0;
+                char curChar    = 0;
+                int count       = 0;
 
-            for (size_t idx = 0; idx < read; idx++) {
+                for (size_t idx = 0; idx < read; idx++) {
 
-                curChar = line[idx];
+                    curChar = line[idx];
 
-                if (prevChar == 0) {
+                    if (prevChar == 0) {
+                        prevChar = curChar;
+                    }
+
+                    if (curChar == prevChar) {
+                        count++;
+
+                        // If last in line -> add remaining to list
+                        if (idx == (read-1))
+                            goto last;
+                    }
+                    
+                    else {
+                        if (head != NULL)
+                            last:
+                            addToLinkedList(head, prevChar, count);
+                        else
+                            head = initLinkedList(prevChar, count);
+                        
+                        count = 1;
+                    }
+
                     prevChar = curChar;
                 }
-
-                if (curChar == prevChar) {
-                    count++;
-
-                    // If last in line -> add remaining to list
-                    if (idx == (read-1))
-                        goto last;
-                }
-                
-                else {
-                    if (head != NULL)
-                        last:
-                        addToLinkedList(head, prevChar, count);
-                    else
-                        head = initLinkedList(prevChar, count);
-                    
-                    count = 1;
-                }
-
-                prevChar = curChar;
             }
+
+            fclose(file);
+            free(line);
+
+            node_t * curr = head;
+
+            int * countP = NULL;
+            if ((countP = calloc(4, sizeof(int))) == NULL) {
+                perror("countP");
+                exit(0);
+            }
+
+            char * charP = NULL;
+            if ((charP = calloc(1, sizeof(char))) == NULL) {
+                perror("charP");
+                exit(0);
+            }
+            
+            while (curr != NULL)
+            {
+                * countP = curr->count;
+                * charP  = curr->character;
+
+                fwrite(countP, sizeof(int), 4, stdout);
+                fwrite(charP, sizeof(char), 1, stdout);
+                curr = curr->next;
+            }
+
+            free(countP);
+            free(charP);
+
+            freeLinkedList(head);
+
+            line = NULL;
+            head = NULL;
         }
-
-        fclose(file);
-        free(line);
-
-        node_t * curr = head;
-
-        int * countP;
-        if ((countP = (int *) calloc(1, sizeof(int))) == NULL) {
-            perror("countP");
-            exit(0);
-        }
-
-        char * charP;
-        if ((charP = (char *) calloc(1, sizeof(char))) == NULL) {
-            perror("charP");
-            exit(0);
-        }
-        
-        while (curr != NULL)
-        {
-            * countP = curr->count;
-            * charP  = curr->character;
-
-            fwrite(countP, sizeof(int), 4, stdout);
-            fwrite(charP, sizeof(char), 1, stdout);
-            curr = curr->next;
-        }
-
-        free(countP);
-        free(charP);
-
-        freeLinkedList(head);
     }
 
-    else printf("usage: /my-zip <filename>\n");
+    else printf("my-zip: file1 [file2 ...]\n");
 
     return 0;
 }
