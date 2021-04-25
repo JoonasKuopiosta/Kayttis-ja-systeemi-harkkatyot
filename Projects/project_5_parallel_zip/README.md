@@ -15,14 +15,19 @@ Every program is compiled with -Wall and -Werror, and are runtime tested with va
 * Smart thread management by not launching more threads than the system can handle (get_nprocs())
 
 ## Building
+
 gcc -o pzip pzip.c -pthread
+
 gcc -o punzip punzip.c -pthread
 
 ## Usage
 `./pzip <file1> [<file2> ...]`
+
 Compressess given files to stdout
 
+
 `./punzip <file1> [<file2> ...]`
+
 Uncompressess given files to stdout
 
 
