@@ -14,13 +14,16 @@ gcc -o reverse reverse.c
 
 ## Usage
 `./reverse`
+
 Reads from stdin and writes to stdout
 tip: use ctrl+D to end input stream
 
 `./reverse <input>`
+
 Reads from given file and writes to stdout
 
 `./reverse <input> <output>`
+
 Reads from given file and writes to given file
 
 
