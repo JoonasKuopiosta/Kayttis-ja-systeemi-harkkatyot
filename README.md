@@ -1,2 +1,5 @@
 # Kayttis-ja-systeemi-harkkatyot
-School work
+
+Every project folder has its own README.md for more information and details about them
+
+Done for school project
