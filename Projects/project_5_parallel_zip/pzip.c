@@ -6,6 +6,18 @@
 #include <time.h>
 
 
+// SOURCES
+// https://linux.die.net/
+// https://man7.org/linux/man-pages/
+// for libc funcs
+//
+// https://www.learn-c.org/en/Linked_lists
+// for linked lists
+//
+// https://www.cs.cmu.edu/afs/cs/academic/class/15492-f07/www/pthreads.html
+//
+
+// "head" = head of the linked list, aka the first node in linked list
 
 // ======== STRUCTS ========
 // Linked list node structure
@@ -116,7 +128,7 @@ ll_node_t * getTailLinkedList(ll_node_t * head) {
     return NULL;
 }
 
-// Shift function removes and returns the head of the list
+// pop function removes and returns the head of the list
 // while updating the head to be the next
 ll_node_t * popLinkedList(ll_node_t ** head) {
     if (* head != NULL) {
@@ -148,7 +160,7 @@ void * threadFunction(void * in_data) {
     size_t len = 0;
     ssize_t read;
 
-
+    // head of this thread's linked list head
     ll_node_t * head = NULL;
 
     // get lock before using global int
@@ -157,6 +169,7 @@ void * threadFunction(void * in_data) {
     busy_th_count++;
     pthread_mutex_unlock(&busy_th_count_lock);
 
+    // opening given file
     if ((file = fopen(filename, "r")) == NULL) {
         fprintf(stderr, "error: cannot open file '%s'\n", filename);
         exit(1);
@@ -177,20 +190,27 @@ void * threadFunction(void * in_data) {
 
             curChar = line[idx];
 
+            // for first run
             if (prevChar == 0) {
                 prevChar = curChar;
             }
 
+            // if current is same as prev
+            // increment count by one
             if (curChar == prevChar) {
                 count++;
 
                 // If last in line -> add remaining to list
-                if (idx == (read-1))
+                if (idx == (read-1)) {
                     goto last;
+                }
             }
             
+            // if current is different of previous
+            // add the record and start recording new
             else {
-
+                
+                // Create num char pair (10A, 53B, 9H, ...)
                 num_char_t * num_char_pair;
                 if ((num_char_pair = calloc(1, sizeof(num_char_t))) == NULL) {
                     perror("num_char_pair");
@@ -201,11 +221,14 @@ void * threadFunction(void * in_data) {
                 num_char_pair->count     = count;
 
 
-                if (head != NULL)
+                if (head != NULL) {
                     last:
                     addToEndOfList(head, num_char_pair);
-                else
+
+                } else {
+                    // first time -> init new head
                     head = initList(num_char_pair);
+                }
                 
                 count = 1;
             }
@@ -247,7 +270,7 @@ int main(int argc, char * argv[]) {
     ll_node_t * main_head = NULL;
 
     // Number of system available threads
-    int th_count = 1;//get_nprocs();
+    int th_count = get_nprocs();
 
     // Number of files to be read
     int file_count = argc-1;
@@ -284,7 +307,7 @@ int main(int argc, char * argv[]) {
         }
 
 
-        // add files to list
+        // add files to list from argv
         // every available thread is assigned next in this linked list
         // to be processed and zipped
         for (size_t idx = 0; idx < file_count; idx++) {
@@ -315,12 +338,12 @@ int main(int argc, char * argv[]) {
 
         while (next_file != NULL)
         {
-            
+            // accessing global variable shared by threads
             pthread_mutex_lock(&busy_th_count_lock);
             busy_cnt = busy_th_count;
             pthread_mutex_unlock(&busy_th_count_lock);
 
-            // if there are non busy threads give them jobs
+            // if there are free threads give them jobs
             if (th_count - busy_cnt > 0) {
 
                 th_data * data = (th_data *) next_file->data;
@@ -330,6 +353,9 @@ int main(int argc, char * argv[]) {
                     perror("thread create");
                     exit(-1);
                 }
+                // freeing the list container of the data
+                free(next_file);
+                // get the next in list
                 next_file = popLinkedList(&file_list_head);
             }
             
@@ -341,20 +367,11 @@ int main(int argc, char * argv[]) {
         
         
         // crude but a working way to wait for all threads to finish
-        time_t start, now;
-        time(&start);
-
         while (1)
         {
             pthread_mutex_lock(&busy_th_count_lock);
             if (busy_th_count < 1) break;
             pthread_mutex_unlock(&busy_th_count_lock);
-
-            time(&now);
-            if (difftime(now, start) > 3) {
-                fprintf(stderr, "threads taking longer than 3 seconds");
-                break;
-            }
 
             if (nanosleep(&loop_sleep, &rem_sleep) < 0) {
                 perror("nanosleep failed");
@@ -386,7 +403,7 @@ int main(int argc, char * argv[]) {
             prev_tail = getTailLinkedList(prev);
         }
 
-
+        // countP is how many of charP (10A, 29B, 23K, ...)
         int * countP = NULL;
         if ((countP = calloc(4, sizeof(int))) == NULL) {
             perror("countP");
@@ -399,6 +416,7 @@ int main(int argc, char * argv[]) {
             exit(0);
         }
 
+        // while there is stuff in linked list do this
         curr = main_head;
         while (curr != NULL)
         {
@@ -406,13 +424,12 @@ int main(int argc, char * argv[]) {
             num_char_t * num_char_pair;
             num_char_pair = (num_char_t *) curr->data;
 
-
             * countP = num_char_pair->count;
             * charP  = num_char_pair->character;
-
-            //fwrite(countP, sizeof(int), 4, stdout);
-            //fwrite(charP, sizeof(char), 1, stdout);
-            printf("%d%c ", *countP, *charP);
+            
+            // 4 byte integer, 1 ASCII char
+            fwrite(countP, sizeof(int), 4, stdout);
+            fwrite(charP, sizeof(char), 1, stdout);
             curr = curr->next;
         }
 
@@ -426,7 +443,7 @@ int main(int argc, char * argv[]) {
         pthread_mutex_destroy(&head_list_lock);
     }
 
-    else printf("my-zip: file1 [file2 ...]\n");
+    else printf("pzip: file1 [file2 ...]\n");
 
     return 0;
 }

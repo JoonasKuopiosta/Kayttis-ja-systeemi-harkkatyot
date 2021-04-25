@@ -3,6 +3,15 @@
 #include <string.h>
 
 
+// SOURCES
+// https://linux.die.net/
+// https://man7.org/linux/man-pages/
+// for libc funcs
+//
+// https://www.learn-c.org/en/Linked_lists
+// for linked lists
+
+
 // Doubly Linked List
 struct Dllist {
     char* text;
@@ -120,6 +129,12 @@ int readFromSource(FILE* fp, struct Dllist** head, struct Dllist** tail) {
     while ((read = getline(&line, &len, fp)) != -1) {
         // Reads from input
         // Read size is used for dynamical allocation
+
+        // if for some reason the line is null
+        if (line == NULL) {
+            perror("Could not read line");
+            exit(1);
+        }
 
         // If head is null the list does not exist yet
         if (*head == NULL) {

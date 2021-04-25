@@ -3,6 +3,12 @@
 #include <string.h>
 
 
+// SOURCES
+// https://linux.die.net/
+// https://man7.org/linux/man-pages/
+// for libc funcs
+
+
 int main(int argc, char * argv[]) {
 
     char * filename;
@@ -27,61 +33,70 @@ int main(int argc, char * argv[]) {
     }
 
     // unzipped is the final result
+    // smaller parts get appended to unzipped
     if ((unzipped = (char *) calloc(unzip_size, sizeof(char))) == NULL) {
         perror("buffer");
         exit(-1);
     }
 
 
-    if (argc == 2) { // One argument is given
+    if (argc >= 2) { // One or more arguments were given
 
-        filename    = argv[1];
+        // for every file given print its uncompressed contents
+        for (size_t idx = 1; idx < argc; idx++) {
+        
+            filename    = argv[idx];
 
-        if ((file = fopen(filename, "rb")) == NULL) {
-            fprintf(stderr, "error: cannot open file '%s'\n", filename);
-            exit(1);
+            if ((file = fopen(filename, "rb")) == NULL) {
+                fprintf(stderr, "error: cannot open file '%s'\n", filename);
+                exit(1);
+            }
+
+            while (1) {
+                
+                // intP = how many of letter charP
+                if (fread(intP, sizeof(int), 4, file) != 4) {
+                    break; // EOF
+                }
+
+                if (fread(charP, sizeof(char), 1, file) != 1) {
+                    break; // EOF
+                }
+
+
+                // Allocate memory as much as there are letters
+                char * buffer;
+                if ((buffer = (char *) calloc((*intP+1), sizeof(char))) == NULL) {
+                    perror("buffer");
+                    exit(-1);
+                }
+
+                // Fill with the given character charP for intP times
+                memset(buffer, *charP, *intP);
+
+                // Increase size
+                unzip_size += *intP;
+
+                // Realloc more space to unzipped version
+                unzipped = realloc(unzipped, unzip_size);
+
+                // Append buffer to unzipped
+                strncat(unzipped, buffer, *intP);
+
+                // Free buffer
+                free(buffer);
+            }
+
+            // close the file
+            fclose(file);
         }
 
-        while (1) {
-            
-            // intP = how many of letter charP
-            if (fread(intP, sizeof(int), 4, file) != 4) {
-                break; // EOF
-            }
 
-            if (fread(charP, sizeof(char), 1, file) != 1) {
-                break; // EOF
-            }
-
-
-            // Allocate memory as much as there are letters
-            char * buffer;
-            if ((buffer = (char *) calloc((*intP+1), sizeof(char))) == NULL) {
-                perror("buffer");
-                exit(-1);
-            }
-
-            // Fill with the given character charP for intP times
-            memset(buffer, *charP, *intP);
-
-            // Increase size
-            unzip_size += *intP;
-
-            // Realloc more space to unzipped version
-            unzipped = realloc(unzipped, unzip_size);
-
-            // Append buffer to unzipped
-            strncat(unzipped, buffer, *intP);
-
-            // Free buffer
-            free(buffer);
-        }
 
         // print the final result
         printf("%s\n", unzipped);
 
         // Tidy up
-        fclose(file);
         free(intP);
         free(charP);
         free(unzipped);

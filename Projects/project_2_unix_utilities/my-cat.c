@@ -3,6 +3,11 @@
 #include <string.h>
 
 
+// SOURCES
+// https://linux.die.net/
+// https://man7.org/linux/man-pages/
+// for fopen and getline
+
 int main(int argc, char *argv[])
 {
     char* filename;
@@ -16,23 +21,30 @@ int main(int argc, char *argv[])
 
     if (argc > 1) { // At least one argument is given
 
+        // iterate over every argument (file name)
         for (size_t i = 1; i < argc; i++) {
             
+            // filename is the given argument
             filename = argv[i];
-
+            // Open the file
             if ((file = fopen(filename, "r")) == NULL) {
                 fprintf(stderr, "error: cannot open file '%s'\n", filename);
                 exit(1);
             }
 
+            // Write every line to stdout
             while ((read = getline(&line, &len, file)) != -1) {
                 printf("%s", line);
             }
+
+            fclose(file);
         }
+
+        // Cleaning up before exiting
+        free(line);
     }
 
-
-    else printf("usage: /my-cat <file 1> <file 2> ...\n");
+    // If no arguments are given just returns 0
 
     return 0;
 }
