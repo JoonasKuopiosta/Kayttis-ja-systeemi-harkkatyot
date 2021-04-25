@@ -151,9 +151,9 @@ int readFromSource(FILE* fp, struct Dllist** head, struct Dllist** tail) {
     free(line);
 
     // Test if any lines were read
-    if (lineCnt > 0)
-        printf("Read %d lines\n", lineCnt);
-    else {
+    if (lineCnt > 0) {
+        // Something was read
+    } else {
         fprintf(stderr, "Empty file\n");
         exit(1);
     }
@@ -227,11 +227,9 @@ int main(int argc, char *argv[]) {
             break;
     }
 
-    printf("Reading %s\n", in_filename);
     // Reading from source and adding to doubly linked list
     readFromSource(f_in, &listHead, &listTail);
 
-    printf("Writing %s\n", out_filename);
     // Print to source from doubly linked list
     printListReverseOrder(f_out, &listTail);
 
@@ -247,8 +245,6 @@ int main(int argc, char *argv[]) {
     
     if (f_out != stdout) // Closing the OUT file
         fclose(f_out);
-    
-    printf("Done! Exiting.\n");
-    
+
     return 0;
 }
